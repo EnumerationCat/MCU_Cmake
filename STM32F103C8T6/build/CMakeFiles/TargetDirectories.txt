@@ -1,0 +1,13 @@
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/CMakeFiles/DEMO.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/CMakeFiles/edit_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/CMakeFiles/rebuild_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/src/app/CMakeFiles/edit_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/src/app/CMakeFiles/rebuild_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/src/driver/CMakeFiles/edit_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/src/driver/CMakeFiles/rebuild_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/third_party/st/STM32F1xx_HAL_Driver/CMakeFiles/edit_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/third_party/st/STM32F1xx_HAL_Driver/CMakeFiles/rebuild_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/components/BSP/CMakeFiles/edit_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/components/BSP/CMakeFiles/rebuild_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/components/Middlewares/CMakeFiles/edit_cache.dir
+C:/Users/20127/Desktop/MCUCode/STM32F103C8T6/build/components/Middlewares/CMakeFiles/rebuild_cache.dir
