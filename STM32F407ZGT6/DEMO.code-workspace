@@ -1,0 +1,32 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "VsCodeTaskButtons.showCounter": true,
+        "VsCodeTaskButtons.tasks": [
+            {
+                "label": "$(wrench) Configure",
+                "task": "CMake Configure",
+                "tooltip": "Run CMake Configure Task"
+            },
+            {
+                "label": "$(tools) Build",
+                "task": "CMake Build",
+                "tooltip": "Run CMake Build Task"
+            },
+            {
+                "label": "$(chip) STLink Flash",
+                "task": "Flash",
+                "tooltip": "Run Flash Task"
+            },
+            {
+                "label": "$(chip) Open OpenOCD",
+                "task": "Open GDB",
+                "tooltip": "Run Open GDB Task"
+            },
+        ]
+    }
+}

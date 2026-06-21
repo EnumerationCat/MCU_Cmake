@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/20127/Desktop/MCUCode/STM32F407ZGT6/build/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/STM32F407ZGT6/build/src/app/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/STM32F407ZGT6/build/components/BSP/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/STM32F407ZGT6/build/components/Middlewares/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/STM32F407ZGT6/build/src/driver/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/STM32F407ZGT6/build/third_party/st/STM32F4xx_HAL_Driver/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
