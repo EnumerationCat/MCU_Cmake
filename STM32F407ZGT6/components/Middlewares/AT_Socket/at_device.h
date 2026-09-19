@@ -64,6 +64,8 @@
 #define AT_CLIENT_SOCKETS_NUM 5
 #define AT_RECV_BUF_SIZE   100
 #define AT_RESP_BUF_SIZE   100
+#define AT_RESP_LINES_MAX  20  //定义AT响应最大行数
+
 
 #define AT_PARSER_TASK_STACK 256
 

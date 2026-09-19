@@ -34,6 +34,7 @@ static PAT_Socket get_socket_for_hw_socket(int hw_socket)
     return NULL;
 }
 
+
 static void esp8266_recv_packet(PAT_Device ptDev)
 {
     struct UART_Device *ptUARTDev = ptDev->ptUARTDev;
@@ -189,7 +190,7 @@ int esp8266_connect_ap(char *ssid, char *passwd)
     char cmd[128];
 
     // 1. 设置WiFi模式为STA
-    if (at_exec_cmd(ptDev, "AT+CWMODE=1\r\n", NULL, 0, NULL, AT_TIMEOUT)) {
+    if (at_exec_cmd(ptDev, (int8_t*)"AT+CWMODE=1\r\n", NULL, 0, NULL, AT_TIMEOUT)) {
         return -1;
     }
 
@@ -205,7 +206,7 @@ int esp8266_connect_ap(char *ssid, char *passwd)
     }
 
     // 3. 查询IP地址(可选)
-    if (at_exec_cmd(ptDev, "AT+CIFSR\r\n", NULL, 0, NULL, AT_TIMEOUT)) {
+    if (at_exec_cmd(ptDev, (int8_t*)"AT+CIFSR\r\n", NULL, 0, NULL, AT_TIMEOUT)) {
         return -1;
     }
 
@@ -316,81 +317,136 @@ int esp8266_listen(int socket, int backlog)
 
 int esp8266_accept(int socket, struct sockaddr *name, socklen_t *namelen)
 {
-    // PAT_Device ptDev  =  get_At_Device();
+    PAT_Device ptDev = get_At_Device();
+    PAT_Socket ptServerSock = &ptDev->sockets[socket];
+    struct sockaddr_in *ptAddr = (struct sockaddr_in *)&ptServerSock->local;
+    uint16_t server_port = ntohs(ptAddr->sin_port);
 
-    // PAT_Socket ptSocket = &ptDev->sockets[socket];
-    // struct sockaddr_in *ptAddr = (struct sockaddr_in *)&ptSocket->local;
-    // uint16_t server_port = ntohs(ptAddr->sin_port);
+    // 修正符号警告：字面量强转int8_t*
+    int8_t *cmd = (int8_t *)"AT+CIPSTATUS=1\r\n";
+    if (at_exec_cmd(ptDev, cmd, NULL, 0, NULL, AT_TIMEOUT))
+    {
+        return -1;
+    }
 
-    // //AT+AT+CIPSTATUS=1 查看连接信息
-    // int8_t *cmd = "AT+CIPSTATUS=1";
-    // if(at_exec_cmd(ptDev,cmd,NULL,0,NULL,AT_TIMEOUT))
-    // {
-    //     return -1;
-    // }
+    // 无有效返回行直接退出
+    if (ptDev->resp_line_counts <= 1)
+    {
+        return -1;
+    }
 
-    // //返回的值
-    // // STATUS:<stat>
-    // // +CIPSTATUS:<link ID>,<type>,<remote IP>,<remote port>,<local port>,<tetype>
+    // resp整块缓冲区起始指针
+    uint8_t *resp_buf = ptDev->resp;
+    uint32_t offset = 0;
+    uint32_t line_idx = 0;
 
-    // if (ptDev->resp_line_counts > 1) {  // 至少有一行数据
-    //     // 解析第一行数据(跳过STATUS行)
-    //     const char *line = ptDev->resp[1];
-    //     if (strstr(line, "+CIPSTATUS:") == line) {
-    //         uint16_t hw_socket;
-    //         char type[10];
-    //         char remote_ip[32];
-    //         uint16_t remote_port;
-    //         uint16_t local_port;
-    //         int tetype;
+    // 遍历所有行，不额外分配行缓存，原地操作
+    while (offset < ptDev->resp_len && line_idx < ptDev->resp_line_counts)
+    {
+        uint8_t *p_line_start = resp_buf + offset;
+        uint32_t line_len = 0;
 
-    //         // 解析格式: +CIPSTATUS:<link ID>,<type>,<remote IP>,<remote port>,<local port>,<tetype>
-    //         int parsed = sscanf(line, "+CIPSTATUS:%hu,%9[^,],%31[^,],%hu,%hu,%d",
-    //                             &hw_socket, type, remote_ip, &remote_port, &local_port, &tetype);
+        // 找到当前行 \r\n 换行
+        while ((offset + line_len) < ptDev->resp_len)
+        {
+            if (resp_buf[offset + line_len] == '\r' && resp_buf[offset + line_len + 1] == '\n')
+            {
+                break;
+            }
+            line_len++;
+        }
 
-    //         if (parsed == 6) {
-    //             if (get_socket_for_hw_socket(hw_socket) != NULL)
-    //             {
-    //                 continue;
-    //             }
-                    
+        // 跳过第一行 STATUS，只处理后续行
+        if (line_idx > 0)
+        {
+            // 原地临时存结束符，解析完自动覆盖，不新开数组
+            uint8_t old_char = p_line_start[line_len];
+            p_line_start[line_len] = '\0';
 
-    //             if (local_port != server_port)
-    //             {
-    //                 continue;
-                    
-    //             }
+            // 强制转char*用于strstr，消除无符号警告
+            const char *line_str = (const char *)p_line_start;
+            if (strstr(line_str, "+CIPSTATUS:") == line_str)
+            {
+                uint16_t hw_socket;
+                char type[10];
+                char remote_ip[32];
+                uint16_t remote_port;
+                uint16_t local_port;
+                int tetype;
 
+                int parsed = sscanf(line_str, "+CIPSTATUS:%hu,%9[^,],%31[^,],%hu,%hu,%d",
+                                    &hw_socket, type, remote_ip, &remote_port, &local_port, &tetype);
 
-    //             //填充sockaddr结构
-    //             struct sockaddr_in *addr = (struct sockaddr_in *)name;
-    //             addr->sin_family = AF_INET;
-    //             addr->sin_port = htons(remote_port);
-    //             inet_pton(AF_INET, remote_ip, &addr->sin_addr);
+                // 解析成功
+                if (parsed == 6)
+                {
+                    // 已有对应软件socket，跳过本次连接
+                    if (get_socket_for_hw_socket(hw_socket) != NULL)
+                    {
+                        // 恢复原字节，移动偏移继续下一行
+                        p_line_start[line_len] = old_char;
+                        offset += line_len + 2;
+                        line_idx++;
+                        continue;
+                    }
+                    // 不是当前服务器端口，跳过
+                    if (local_port != server_port)
+                    {
+                        p_line_start[line_len] = old_char;
+                        offset += line_len + 2;
+                        line_idx++;
+                        continue;
+                    }
 
-    //             if (namelen) {
-    //                 *namelen = sizeof(struct sockaddr_in);
-    //             }
+                    // 填充客户端地址
+                    if (name != NULL)
+                    {
+                        struct sockaddr_in *addr = (struct sockaddr_in *)name;
+                        addr->sin_family = AF_INET;
+                        addr->sin_port = htons(remote_port);
+                        inet_pton(AF_INET, remote_ip, &addr->sin_addr);
+                        memset(addr->sin_zero, 0, SIN_ZERO_LEN);
+                        if (namelen)
+                            *namelen = sizeof(struct sockaddr_in);
+                    }
 
-    //             int sw_socket = esp8266_socket(AF_INET, SOCK_STREAM, 0);
-    //             PAT_Socket ptSocket = &ptDev->sockets[sw_socket];
-    //             ptSocket->user_data = (void *)hw_socket;
-    //             ptSocket->remote = *addr;
+                    // 创建新软件socket
+                    int sw_socket = esp8266_socket(AF_INET, SOCK_STREAM, 0);
+                    if (sw_socket < 0)
+                    {
+                        p_line_start[line_len] = old_char;
+                        return -1;
+                    }
+                    PAT_Socket ptNewSock = &ptDev->sockets[sw_socket];
+                    // 修复指针转换警告：uintptr_t中转
+                    ptNewSock->user_data = (void *)(uintptr_t)hw_socket;
 
-    //             //ptSocket->local = ;
-    //             addr = (struct sockaddr_in *)&ptSocket->local;
-    //             addr->sin_family = AF_INET;
-    //             addr->sin_port = htons(local_port);
+                    // 修复：不同结构体不能直接赋值，使用memcpy
+                    if (name != NULL)
+                        memcpy(&ptNewSock->remote, name, sizeof(struct sockaddr));
 
+                    // 填充本地端口
+                    struct sockaddr_in *local_addr = (struct sockaddr_in *)&ptNewSock->local;
+                    local_addr->sin_family = AF_INET;
+                    local_addr->sin_port = htons(local_port);
+                    local_addr->sin_addr.s_addr = INADDR_ANY;
+                    memset(local_addr->sin_zero, 0, SIN_ZERO_LEN);
 
+                    p_line_start[line_len] = old_char;
+                    return sw_socket;
+                }
+            }
+            // 恢复缓冲区原始字节，不破坏resp数据
+            p_line_start[line_len] = old_char;
+        }
 
-    //             return sw_socket;  // 返回链接ID作为socket描述符
-    //         }
-    //     }
-    // }
+        // 跳到下一行（跳过\r\n两个字节）
+        offset += line_len + 2;
+        line_idx++;
+    }
+
     return -1;
 }
-
 
 
 static int get_unused_hw_socket(void)
@@ -449,7 +505,7 @@ int esp8266_connect(int socket, const struct sockaddr *name, socklen_t namelen)
     
 
     // 3. 发送AT命令
-    if (at_exec_cmd(ptDev, cmd, NULL, 0, NULL, AT_TIMEOUT)) {
+    if (at_exec_cmd(ptDev, (int8_t*)cmd, NULL, 0, NULL, AT_TIMEOUT)) {
         return -1;
     }
 
@@ -479,8 +535,7 @@ int esp8266_sendto(int socket, const void *data, size_t size, int flags, const s
         char ipstr[16] = {0};
         struct sockaddr_in *paddr = (struct sockaddr_in *)to;
         uint16_t port = ntohs(paddr->sin_port);
-        //ipaddr_to_ipstr(paddr, ipstr);
-
+        ipaddr_to_ipstr((const struct sockaddr *)paddr, ipstr);
         sprintf(cmd, "AT+CIPSEND=%d,%d,%s,%d\r\n", hw_socket, size, ipstr, port);
     }
     else
@@ -565,7 +620,6 @@ int esp8266_recvfrom(int socket, void *mem, size_t len, int flags, struct sockad
 
     //读取失败
     return -1;
-
 }
 
 
@@ -605,7 +659,7 @@ static void esp8266_parser(void * pvParameters)
         //    然后释放信号量
         if(strstr(line, "+IPD,"))
         {
-            //esp8266_recv_packet(ptDev);
+            esp8266_recv_packet(ptDev);
             len = 0;
             continue;
         }
@@ -615,15 +669,15 @@ static void esp8266_parser(void * pvParameters)
         //   存储这些多行数据
         //   解析最后的"OK\r\n"和"ERROR\r\n"
 
-        // if (data == '\n') { // 检测到换行符
-        //     if (ptDev->resp_line_counts < AT_RESP_LINES_MAX) {
-        //         // 保存当前行到resp数组
-        //         memcpy((ptDev->resp[ptDev->resp_len]), line, len+1);
-        //         ptDev->resp_line_counts++;
-        //         ptDev->resp_len += len;
-        //     }
-        //     len = 0;
-        // }
+        if (data == '\n') { // 检测到换行符
+            if (ptDev->resp_line_counts < AT_RESP_LINES_MAX) {
+                // 保存当前行到resp数组
+                memcpy(&ptDev->resp[ptDev->resp_len], line, len+1);
+                ptDev->resp_line_counts++;
+                ptDev->resp_len += len;
+            }
+            len = 0;
+        }
 
 
         if (strstr(line, "OK\r\n") || strstr(line, "ERROR\r\n")) {

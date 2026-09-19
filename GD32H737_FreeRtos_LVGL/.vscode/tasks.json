@@ -33,12 +33,16 @@
         {
             "label": "Flash",
             "type": "shell",
-            "command": "openocd",
+            "command": "D:/Cmake_Tool/gd32-openocd/bin/openocd.exe",
             "args": [
+                "-c",
+                "set WORKAREASIZE 0x10000",
                 "-f",
                 "interface/cmsis-dap.cfg",
                 "-f",
-                "target/gd32h7x.cfg",
+                "target/gd32h7xx.cfg",
+                "-c",
+                "gd32h7xx.cpu configure -work-area-phys 0x20000000 -work-area-size 0x10000 -work-area-backup 0",
                 "-c",
                 "program ./build/DEMO.elf verify reset exit"
             ],

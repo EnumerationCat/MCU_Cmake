@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/20127/Desktop/MCUCode/GD32H737_FreeRtos_LVGL/build/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/GD32H737_FreeRtos_LVGL/build/src/app/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/GD32H737_FreeRtos_LVGL/build/src/driver/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/GD32H737_FreeRtos_LVGL/build/components/BSP/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/GD32H737_FreeRtos_LVGL/build/components/Middlewares/cmake_install.cmake",
+		"C:/Users/20127/Desktop/MCUCode/GD32H737_FreeRtos_LVGL/build/third_party/gd/GD32H7xx_Driver/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

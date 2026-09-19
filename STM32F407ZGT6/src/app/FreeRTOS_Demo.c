@@ -8,6 +8,7 @@
 #include "timers.h"
 
 #include "uart_device.h"
+#include "at_socket.h"
 #include "key.h"
 /**
  * @brief 栈溢出钩子函数（configCHECK_FOR_STACK_OVERFLOW>0 时必须实现）
@@ -192,29 +193,65 @@ void start_Task(void * pvParameters)
 
 }
 
-
+#define SERVER_IP "api.seniverse.com"
+#define SERVER_PORT 80
 
 void task1(void * pvParameters)
 {
 
-	char c[100];
-	struct UART_Device *pUARTDev = GetUARTDevice("stm32_uart1");
-    pUARTDev->Init(pUARTDev, 115200, 8, 'N', 1);
+	
+	at_init("stm32_uart1");
+
+	while(1)
+	{
+		if(0 ==	at_connect_ap("Wi-Fi","chuang123."))
+		{
+			break;
+		}
+		vTaskDelay(1000);
+
+	}
+
+	int iSocketClient;
+	struct sockaddr_in tSocketServerAddr;
+	
+
+	iSocketClient = socket(AF_INET, SOCK_STREAM, 0);
+
+
+	tSocketServerAddr.sin_family = AF_INET;
+	tSocketServerAddr.sin_port = htons(SERVER_PORT);
+	int res = inet_pton(tSocketServerAddr.sin_family,SERVER_IP, &(tSocketServerAddr.sin_addr));
+
+	if(res <= 0)
+	{
+		return;
+	}
+
+
+	memset(tSocketServerAddr.sin_zero, 0, 8);
+
+
+	int iRet = connect(iSocketClient, (struct sockaddr*)&tSocketServerAddr, sizeof(struct sockaddr));
+
+	// if(-1 == iRet)
+	// {
+	// 	return;
+	// }
 
 
 
-    
+
 
 	while (1)
 	{
 
-		while (0 != pUARTDev->Recv(pUARTDev, (uint8_t *)c, 100));
-		pUARTDev->Send(pUARTDev, (uint8_t *)c,1, 1);
-		vTaskDelay(10);
-
 		
+		vTaskDelay(500);
 			
 	}
+
+
 }
 
 

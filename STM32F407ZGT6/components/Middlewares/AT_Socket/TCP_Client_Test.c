@@ -16,7 +16,7 @@
 void tcp_client_test_task(void *arg) {
 
 
-	at_init("stm32_uart3");
+	at_init("stm32_uart1");
 
 	while(1)
 	{

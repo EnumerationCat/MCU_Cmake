@@ -30,7 +30,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 set(SPECS_FLAGS "--specs=nosys.specs --specs=nano.specs")
-set(COMMON_FLAGS "-O2 -fno-strict-aliasing -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -Wall -Wdouble-promotion -Wno-sign-compare -Wno-psabi -g3 -ggdb3")
+set(COMMON_FLAGS "-O3 -fno-strict-aliasing -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -Wall -Wdouble-promotion -Wno-sign-compare -Wno-psabi -g3 -ggdb3")
 set(ASM_FLAGS "-x assembler-with-cpp")
 set(CXX_FLAGS "-fno-rtti -fno-exceptions -fno-threadsafe-statics -Wsuggest-override -Wno-register")
 
